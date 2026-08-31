@@ -777,20 +777,59 @@
          * Backtracking solver — solves from current grid state.
          */
         _solveGrid(grid) {
+            this._solveAttempts = 0;
             const copy = [...grid];
-            if (this._backtrack(copy)) return copy;
+            const emptyCount = copy.filter(v => v === 0).length;
+            console.log(`🔍 解题器开始求解，共 ${emptyCount} 个空格`);
+            console.log('📋 初始盘面（0=空格）：');
+            this._logGrid(copy);
+
+            if (this._backtrack(copy)) {
+                console.log(`✅ 解题成功！共尝试 ${this._solveAttempts} 步`);
+                this._logGrid(copy);
+                return copy;
+            }
+            console.log(`❌ 解题失败（共尝试 ${this._solveAttempts} 步）—— 当前盘面无解`);
             return null;
         },
 
-        _backtrack(grid) {
+        /**
+         * 在控制台以 9×9 网格形式打印盘面
+         */
+        _logGrid(grid) {
+            const rows = [];
+            for (let r = 0; r < 9; r++) {
+                const row = grid.slice(r * 9, r * 9 + 9)
+                    .map(v => v === 0 ? '.' : String(v))
+                    .join(' ');
+                rows.push(row);
+            }
+            console.log(rows.join('\n'));
+        },
+
+        _backtrack(grid, depth = 0) {
             const idx = grid.indexOf(0);
-            if (idx === -1) return true;
+            if (idx === -1) {
+                console.log(`🎯 回溯完成，深度 ${depth}`);
+                return true;
+            }
 
             const candidates = Generator._getCandidates(grid, idx);
+            const r = Math.floor(idx / 9), c = idx % 9;
+
+            console.log(`  ${'  '.repeat(depth)}▶ 尝试填 [${r + 1},${c + 1}]（索引 ${idx}），候选: [${candidates.join(', ')}]`);
+
             for (const val of candidates) {
+                this._solveAttempts++;
                 grid[idx] = val;
-                if (this._backtrack(grid)) return true;
+                console.log(`  ${'  '.repeat(depth)}  ├─ 填入 ${val}，递归...`);
+                if (this._backtrack(grid, depth + 1)) return true;
                 grid[idx] = 0;
+                console.log(`  ${'  '.repeat(depth)}  └─ 回溯 [${r + 1},${c + 1}]（${val} 不成立）`);
+            }
+
+            if (depth === 0) {
+                console.log(`  ⚠️  第一层无候选可填，无解`);
             }
             return false;
         },
@@ -840,6 +879,7 @@
                     toFill.push({ index: i, value: solution[i] });
                 }
             }
+            console.log(`📦 共找到 ${toFill.length} 个待填入单元格（计算总步数：${this._solveAttempts}），开始动画填充...`);
 
             // Animate filling one by one
             const board = document.getElementById('solve-board');
